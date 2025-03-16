@@ -13,9 +13,9 @@ export default function Home() {
   const [currentImage, setCurrentImage] = useState(0);
 
   const images = [
+    'https://images.unsplash.com/photo-1591637333184-19aa84b3e01f?auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1615854366019-77d4df6d8e8d?auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1615854365977-1d2065be1146?auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80',
   ];
 
   const [heroRef, heroInView] = useInView({
@@ -42,7 +42,7 @@ export default function Home() {
       category: 'Brakes',
       price: 299.99,
       image:
-        'https://images.unsplash.com/photo-1615854366019-77d4df6d8e8d?auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1591637333184-19aa84b3e01f?auto=format&fit=crop&q=80',
       addToCart: true,
     },
     {
@@ -51,7 +51,7 @@ export default function Home() {
       category: 'Wheels',
       price: 1299.99,
       image:
-        'https://images.unsplash.com/photo-1615854365977-1d2065be1146?auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80',
       addToCart: true,
     },
     {
@@ -60,7 +60,7 @@ export default function Home() {
       category: 'Exhaust',
       price: 599.99,
       image:
-        'https://images.unsplash.com/photo-1615854366009-2f973f2037b4?auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80',
       addToCart: true,
     },
   ];

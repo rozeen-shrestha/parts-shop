@@ -22,7 +22,7 @@ interface Product {
 
 export default function ProductDetailPage() {
   const [selectedImage, setSelectedImage] = useState(
-    'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1591637333184-19aa84b3e01f'
   );
   const [showZoom, setShowZoom] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
@@ -44,10 +44,10 @@ export default function ProductDetailPage() {
     ],
     inStock: true,
     image:
-      'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1591637333184-19aa84b3e01f',
     additionalImages: [
-      'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80',
-      'https://unsplash.com/photos/a-lone-pine-tree-stands-alone-in-the-snow-mxcEEn61-eQ?auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1591637333184-19aa84b3e01f',
+      'https://images.unsplash.com/photo-1558981806-ec527fa84c39',
     ],
   };
 

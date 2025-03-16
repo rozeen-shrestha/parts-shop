@@ -14,14 +14,14 @@ const products = [
     name: "Performance Brake Kit",
     category: "Brakes",
     price: 299.99,
-    image: "https://images.unsplash.com/photo-1615854366019-77d4df6d8e8d",
+    image: "https://images.unsplash.com/photo-1591637333184-19aa84b3e01f",
   },
   {
     id: 2,
     name: "Carbon Fiber Wheels",
     category: "Wheels",
     price: 1299.99,
-    image: "https://images.unsplash.com/photo-1615854365977-1d2065be1146",
+    image: "https://images.unsplash.com/photo-1558981403-c5f9899a28bc",
   },
   // Add more products as needed
 ];
