@@ -8,16 +8,21 @@ export default function Contact() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
+  const [success, setSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert(
-      `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\nMessage: ${message}`
-    );
+    await fetch('/api/contacts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, phone, message }),
+    });
     setName('');
     setEmail('');
     setPhone('');
     setMessage('');
+    setSuccess(true);
+    setTimeout(() => setSuccess(false), 3000);
   };
 
   return (
@@ -111,6 +116,11 @@ export default function Contact() {
             >
               Submit
             </motion.button>
+            {success && (
+              <div className="text-green-400 text-center mt-2">
+                Thank you for contacting us!
+              </div>
+            )}
           </form>
         </div>
       </section>

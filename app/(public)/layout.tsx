@@ -4,6 +4,7 @@ import { Rajdhani } from 'next/font/google';
 import { Navigation } from '@/components/navigation';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Footer } from '@/components/footer';
+import { CartBubbleWrapper } from '@/components/cart-bubble-wrapper';
 
 const rajdhani = Rajdhani({
   subsets: ['latin'],
@@ -30,7 +31,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Navigation />
+          <CartBubbleWrapper>
           {children}
+          </CartBubbleWrapper>
           <Footer />
         </ThemeProvider>
       </body>

@@ -1,135 +1,98 @@
 'use client';
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 
 interface Contact {
+  _id?: string;
   name: string;
   email: string;
   phone: string;
   message: string;
+  createdAt?: string;
 }
 
-export default function AdminDashboard() {
-  const [contacts, setContacts] = useState<Contact[]>([
-    {
-      name: 'John Doe',
-      email: 'john@example.com',
-      phone: '123-456-7890',
-      message: 'Looking for bulk orders.',
-    },
-    {
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      phone: '987-654-3210',
-      message: 'Interested in a partnership.',
-    },
-  ]);
-
+export default function AdminContacts() {
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
 
-  const handleView = (contact: Contact) => {
-    setSelectedContact(contact);
-  };
-
-  const handleDone = () => {
-    setSelectedContact(null);
-  };
+  useEffect(() => {
+    fetch('/api/contacts')
+      .then(res => res.json())
+      .then(data => {
+        setContacts(data);
+        setLoading(false);
+      });
+  }, []);
 
   return (
     <div className="min-h-screen p-8 bg-black text-white">
-      {/* Dashboard Header */}
-      <motion.h1
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-3xl font-bold"
-      >
-        Contacts
-      </motion.h1>
-
-      {/* Contact Submissions Table Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-        className="bg-gray-900 p-6 rounded-lg mt-8"
-      >
-        <h2 className="text-xl font-semibold mb-6">Recent Contact Submissions</h2>
-
-        {contacts.length === 0 ? (
-          <p className="text-gray-400">No contact submissions yet.</p>
-        ) : (
-          <motion.div className="overflow-x-auto">
-            <table className="min-w-full table-auto border-collapse">
-              <thead>
-                <tr>
-                  <th className="px-4 py-2 border-b text-left">Name</th>
-                  <th className="px-4 py-2 border-b text-left">Email</th>
-                  <th className="px-4 py-2 border-b text-left">Phone</th>
-                  <th className="px-4 py-2 border-b text-left">Message</th>
-                  <th className="px-4 py-2 border-b text-left">Actions</th>
+      <h1 className="text-3xl font-bold mb-6">Contacts</h1>
+      {loading ? (
+        <div>Loading...</div>
+      ) : (
+        <div className="overflow-x-auto bg-gray-900 rounded-lg p-4">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-800 text-gray-300">
+                <th className="py-3 px-4 text-left">Name</th>
+                <th className="py-3 px-4 text-left">Email</th>
+                <th className="py-3 px-4 text-left">Phone</th>
+                <th className="py-3 px-4 text-left">Message</th>
+                <th className="py-3 px-4 text-left">Date</th>
+                <th className="py-3 px-4 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {contacts.map((contact, idx) => (
+                <tr
+                  key={contact._id || idx}
+                  className="border-b border-gray-700 hover:bg-gray-800 transition"
+                >
+                  <td className="py-3 px-4">{contact.name}</td>
+                  <td className="py-3 px-4">{contact.email}</td>
+                  <td className="py-3 px-4">{contact.phone}</td>
+                  <td className="py-3 px-4">{contact.message}</td>
+                  <td className="py-3 px-4">
+                    {contact.createdAt ? new Date(contact.createdAt).toLocaleString() : '-'}
+                  </td>
+                  <td className="py-3 px-4">
+                    <button
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                      onClick={() => setSelectedContact(contact)}
+                    >
+                      View
+                    </button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {contacts.map((contact, index) => (
-                  <tr
-                    key={index}
-                    className="bg-gray-800 hover:bg-gray-700 transition"
-                  >
-                    <td className="px-4 py-2 border-b">{contact.name}</td>
-                    <td className="px-4 py-2 border-b">{contact.email}</td>
-                    <td className="px-4 py-2 border-b">{contact.phone}</td>
-                    <td className="px-4 py-2 border-b">{contact.message}</td>
-                    <td className="px-4 py-2 border-b">
-                      <button
-                        className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition mr-2"
-                        onClick={() => handleView(contact)}
-                      >
-                        View
-                      </button>
-                      <button
-                        className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition"
-                        onClick={() => handleDone()}
-                      >
-                        Done
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </motion.div>
-        )}
-      </motion.div>
+              ))}
+            </tbody>
+          </table>
+          {contacts.length === 0 && (
+            <div className="text-gray-400 mt-4 text-center">No contacts found.</div>
+          )}
+        </div>
+      )}
 
-      {/* Contact Details Modal */}
+      {/* Modal for contact details */}
       {selectedContact && (
-        <motion.div
-          className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <motion.div
-            className="bg-gray-900 p-6 rounded-lg w-full max-w-md shadow-lg"
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 50, opacity: 0 }}
-          >
-            <h2 className="text-xl font-semibold text-white mb-4">
-              {selectedContact.name}
-            </h2>
-            <p className="text-gray-400">📧 {selectedContact.email}</p>
-            <p className="text-gray-400">📞 {selectedContact.phone}</p>
-            <p className="text-gray-300 mt-4">📝 {selectedContact.message}</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+          <div className="bg-gray-900 rounded-lg shadow-lg p-8 max-w-md w-full relative">
             <button
-              className="mt-6 bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition w-full"
+              className="absolute top-2 right-2 text-gray-400 hover:text-white text-2xl"
               onClick={() => setSelectedContact(null)}
+              aria-label="Close"
             >
-              Close
+              &times;
             </button>
-          </motion.div>
-        </motion.div>
+            <h2 className="text-2xl font-bold mb-4">Contact Details</h2>
+            <div className="mb-2"><span className="font-semibold">Name:</span> {selectedContact.name}</div>
+            <div className="mb-2"><span className="font-semibold">Email:</span> {selectedContact.email}</div>
+            <div className="mb-2"><span className="font-semibold">Phone:</span> {selectedContact.phone}</div>
+            <div className="mb-2"><span className="font-semibold">Message:</span> {selectedContact.message}</div>
+            <div className="mb-2"><span className="font-semibold">Date:</span> {selectedContact.createdAt ? new Date(selectedContact.createdAt).toLocaleString() : '-'}</div>
+          </div>
+        </div>
       )}
     </div>
   );

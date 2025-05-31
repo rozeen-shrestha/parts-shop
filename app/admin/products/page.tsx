@@ -1,38 +1,74 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 
 interface Product {
-  id: number;
+  _id: string;
   name: string;
-  price: string;
+  category: string;
+  price: number;
   stock: number;
+  description: string;
+  specifications: string[];
+  inStock: boolean;
+  image: string;
+  additionalImages: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function AdminProducts() {
   const router = useRouter();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [products, setProducts] = useState<Product[]>([
-    { id: 1, name: 'Gaming Laptop', price: '$1,499', stock: 10 },
-    { id: 2, name: 'Wireless Headphones', price: '$299', stock: 25 },
-    { id: 3, name: 'Mechanical Keyboard', price: '$129', stock: 40 },
-  ]);
+  // Fetch products from the API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('/api/product');
+        if (response.ok) {
+          const data = await response.json();
+          setProducts(data);
+        } else {
+          console.error('Failed to fetch products');
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleDelete = (id: number) => {
+    fetchProducts();
+  }, []);
+
+  const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
-      setProducts(products.filter((product) => product.id !== id));
+      try {
+        const response = await fetch(`/api/product?id=${id}`, {
+          method: 'DELETE',
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          setProducts(products.filter((product) => product._id !== id));
+          alert('Product deleted successfully.');
+        } else {
+          alert('Failed to delete product.');
+        }
+      } catch (error) {
+        console.error('Error deleting product:', error);
+        alert('An error occurred. Please try again.');
+      }
     }
   };
 
   const handleEdit = (product: Product) => {
     router.push(
-      `/admin/products/edit?id=${product.id}&name=${encodeURIComponent(
-        product.name
-      )}&price=${encodeURIComponent(
-        product.price
-      )}&stock=${encodeURIComponent(product.stock)}`
+      `/admin/products/edit/${product._id}`
     );
   };
 
@@ -63,47 +99,53 @@ export default function AdminProducts() {
         animate={{ opacity: 1, y: 0 }}
         className="mt-6 overflow-x-auto bg-gray-900 rounded-lg p-4"
       >
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-800 text-gray-300">
-              <th className="py-3 px-4 text-left">Product Name</th>
-              <th className="py-3 px-4 text-left">Price</th>
-              <th className="py-3 px-4 text-left">Stock</th>
-              <th className="py-3 px-4 text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="py-6 text-center text-gray-400">
-                  No products found.
-                </td>
+        {loading ? (
+          <p className="text-center text-gray-400">Loading products...</p>
+        ) : (
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-800 text-gray-300">
+                <th className="py-3 px-4 text-left">Product Name</th>
+                <th className="py-3 px-4 text-left">Category</th>
+                <th className="py-3 px-4 text-left">Price</th>
+                <th className="py-3 px-4 text-left">Stock</th>
+                <th className="py-3 px-4 text-center">Actions</th>
               </tr>
-            ) : (
-              products.map((product) => (
-                <tr key={product.id} className="border-b border-gray-700">
-                  <td className="py-3 px-4">{product.name}</td>
-                  <td className="py-3 px-4">{product.price}</td>
-                  <td className="py-3 px-4">{product.stock}</td>
-                  <td className="py-3 px-4 text-center space-x-3">
-                    <button
-                      className="bg-yellow-500 text-black px-4 py-2 rounded-md hover:bg-yellow-600"
-                      onClick={() => handleEdit(product)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-700"
-                      onClick={() => handleDelete(product.id)}
-                    >
-                      Delete
-                    </button>
+            </thead>
+            <tbody>
+              {products.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-6 text-center text-gray-400">
+                    No products found.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                products.map((product) => (
+                  <tr key={product._id} className="border-b border-gray-700">
+                    <td className="py-3 px-4">{product.name}</td>
+                    <td className="py-3 px-4">{product.category}</td>
+                    <td className="py-3 px-4">${product.price}</td>
+                    <td className="py-3 px-4">{product.stock}</td>
+                    <td className="py-3 px-4 text-center space-x-3">
+                      <button
+                        className="bg-yellow-500 text-black px-4 py-2 rounded-md hover:bg-yellow-600"
+                        onClick={() => handleEdit(product)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-700"
+                        onClick={() => handleDelete(product._id)}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
       </motion.div>
     </div>
   );

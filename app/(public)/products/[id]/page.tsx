@@ -1,82 +1,76 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ShoppingCart, Mail } from 'lucide-react';
-import Link from 'next/link';
+import { ShoppingCart } from 'lucide-react';
 import ProductCard from '@/components/productcard';
 
-interface Product {
-  id: number;
+// Add a Product type
+type Product = {
+  _id?: string;
+  id?: string;
   name: string;
-  category: string;
   price: number;
-  description: string;
-  specifications: string[]; // Array of specifications
-  inStock: boolean;
   image: string;
-  additionalImages: string[];
-  addToCart?: boolean;
-}
+  category?: string;
+  description?: string;
+  specifications?: string[];
+  additionalImages?: string[];
+  [key: string]: any;
+};
 
 export default function ProductDetailPage() {
-  const [selectedImage, setSelectedImage] = useState(
-    'https://images.unsplash.com/photo-1591637333184-19aa84b3e01f'
-  );
+  const params = useParams();
+  const productId = params.id;
+  const router = useRouter();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [selectedImage, setSelectedImage] = useState('');
   const [showZoom, setShowZoom] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
-  const [quantity, setQuantity] = useState(1); // Quantity state
+  const [quantity, setQuantity] = useState(1);
   const imageContainerRef = useRef<HTMLDivElement>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [addedToCart, setAddedToCart] = useState(false);
 
-  const product: Product = {
-    id: 1,
-    name: 'Performance Brake Kit',
-    category: 'Brakes',
-    price: 299.99,
-    description:
-      'High-performance brake kit designed for maximum stopping power and durability.',
-    specifications: [
-      'Fits most performance vehicles',
-      'Cross-drilled rotors',
-      'Ceramic brake pads',
-    ],
-    inStock: true,
-    image:
-      'https://images.unsplash.com/photo-1591637333184-19aa84b3e01f',
-    additionalImages: [
-      'https://images.unsplash.com/photo-1591637333184-19aa84b3e01f',
-      'https://images.unsplash.com/photo-1558981806-ec527fa84c39',
-    ],
-  };
+  useEffect(() => {
+    const fetchProduct = async () => {
+      const res = await fetch(`/api/product?id=${productId}`);
+      const data = await res.json();
+      setProduct(data);
+      // Set default selected image
+      if (data?.image) {
+        setSelectedImage(
+          data.image.startsWith('http')
+            ? data.image
+            : `/api/file/${data.image}`
+        );
+      }
+    };
+    if (productId) fetchProduct();
+  }, [productId]);
 
-  const relatedProducts = [
-    {
-      id: 2,
-      name: 'Carbon Fiber Wheels',
-      category: 'Wheels',
-      price: 1299.99,
-      image: product.image,
-      addToCart: true,
-    },
-    {
-      id: 3,
-      name: 'Performance Exhaust System',
-      category: 'Exhaust',
-      price: 599.99,
-      image: product.image,
-      addToCart: true,
-    },
-    {
-      id: 4,
-      name: 'Custom Engine Tuning',
-      category: 'Engine',
-      price: 799.99,
-      image: product.image,
-      addToCart: false,
-    },
-  ];
+  useEffect(() => {
+    // Fetch related products (same category if possible, always exclude current)
+    const fetchRelated = async () => {
+      const res = await fetch('/api/product');
+      const all: Product[] = await res.json();
+      let filtered = all.filter(
+        (p: Product) =>
+          product &&
+          (p._id || p.id) !== (product._id || product.id)
+      );
+      if (product?.category) {
+        const sameCategory = filtered.filter((p: Product) => p.category === product.category);
+        setRelatedProducts((sameCategory.length > 0 ? sameCategory : filtered).slice(0, 6));
+      } else {
+        setRelatedProducts(filtered.slice(0, 6));
+      }
+    };
+    if (product) fetchRelated();
+  }, [product]);
 
   // Handle zoom effect
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -107,6 +101,41 @@ export default function ProductDetailPage() {
     setQuantity(value);
   };
 
+  // Add to Cart handler
+  const handleAddToCart = () => {
+    if (!product) return;
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const existing = cart.find((item: any) => (item._id || item.id) === (product._id || product.id));
+    if (existing) {
+      existing.quantity += quantity;
+    } else {
+      cart.push({
+        id: product._id || product.id,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        category: product.category,
+        quantity,
+        inStock: true,
+      });
+    }
+    localStorage.setItem("cart", JSON.stringify(cart));
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 1200);
+  };
+
+  if (!product) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-white">
+        Loading...
+      </div>
+    );
+  }
+
+  const additionalImages = Array.isArray(product.additionalImages)
+    ? product.additionalImages
+    : [];
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-black to-gray-900 text-white pt-24 pb-16">
       <div className="max-w-7xl mx-auto px-4 ">
@@ -126,7 +155,11 @@ export default function ProductDetailPage() {
               onMouseLeave={() => setShowZoom(false)}
             >
               <Image
-                src={selectedImage}
+                src={
+                  selectedImage.startsWith("http")
+                    ? selectedImage
+                    : `/api/file/${selectedImage.replace(/^\/api\/file\//, "")}`
+                }
                 alt={product.name}
                 fill
                 className="object-cover"
@@ -143,7 +176,7 @@ export default function ProductDetailPage() {
                       Math.min(
                         cursorPosition.x - 48,
                         imageContainerRef.current?.clientWidth ?? 0 - 96
-                      )
+                      ),
                     ),
                     top: Math.max(
                       0,
@@ -174,25 +207,35 @@ export default function ProductDetailPage() {
 
             {/* Thumbnails */}
             <div className="flex gap-2 overflow-x-auto pb-2">
-              {product.additionalImages.map((img, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.2 + index * 0.1, duration: 0.5 }}
-                  onClick={() => setSelectedImage(img)}
-                  className={`relative w-20 h-20 rounded-md cursor-pointer ${
-                    selectedImage === img ? 'ring-2 ring-red-500' : ''
-                  }`}
-                >
-                  <Image
-                    src={img}
-                    alt={`Thumbnail ${index + 1}`}
-                    fill
-                    className="object-cover rounded-md"
-                  />
-                </motion.div>
-              ))}
+              {[product.image, ...additionalImages].filter(Boolean).map((img, index) => {
+                const imgSrc = img.startsWith('http') ? img : `/api/file/${img}`;
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2 + index * 0.1, duration: 0.5 }}
+                    onClick={() => setSelectedImage(imgSrc)}
+                  >
+                    <div
+                      className={`relative w-20 h-20 rounded-md cursor-pointer ${
+                        selectedImage === imgSrc ? 'ring-2 ring-red-500' : ''
+                      }`}
+                    >
+                      <Image
+                        src={
+                          imgSrc.startsWith("http")
+                            ? imgSrc
+                            : `/api/file/${imgSrc.replace(/^\/api\/file\//, "")}`
+                        }
+                        alt={`Thumbnail ${index + 1}`}
+                        fill
+                        className="object-cover rounded-md"
+                      />
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           </motion.div>
 
@@ -205,15 +248,21 @@ export default function ProductDetailPage() {
           >
             <h1 className="text-3xl font-bold text-white">{product.name}</h1>
             <p className="text-2xl text-red-500 font-semibold">
-              ${product.price.toFixed(2)}
+              Rs {product.price?.toFixed(2)}
             </p>
-            <p className="text-gray-300">{product.description}</p>
+            <p
+              className="text-gray-300"
+              style={{ whiteSpace: 'pre-line' }}
+            >
+              {product.description}
+            </p>
 
             {/* Specifications */}
             <ul className="list-disc pl-5 text-gray-300">
-              {product.specifications.map((spec, index) => (
-                <li key={index}>{spec}</li>
-              ))}
+              {(Array.isArray(product.specifications) ? product.specifications : [])
+                .map((spec, index) => (
+                  <li key={index}>{spec}</li>
+                ))}
             </ul>
 
             {/* Quantity Input */}
@@ -222,17 +271,18 @@ export default function ProductDetailPage() {
               value={quantity}
               onChange={handleQuantityChange}
               min="1"
-              className="w-full p-3 bg-gray-800 rounded"
               placeholder="Quantity"
+              className="w-full p-3 bg-gray-800 rounded"
             />
 
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg flex items-center justify-center"
+              onClick={handleAddToCart}
             >
               <ShoppingCart className="mr-2 h-5 w-5" />
-              Add to Cart
+              {addedToCart ? "Added!" : "Add to Cart"}
             </motion.button>
           </motion.div>
         </div>
@@ -247,16 +297,25 @@ export default function ProductDetailPage() {
           <h2 className="text-2xl font-bold text-white mb-8">
             Related Products
           </h2>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {relatedProducts.map((product, index) => (
               <motion.div
-                key={product.id}
+                key={product._id || product.id}
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.2 }}
               >
-                <ProductCard product={product} index={index} />
+                <ProductCard
+                  product={{
+                    ...product,
+                    image: product.image && !product.image.startsWith('http')
+                      ? `/api/file/${product.image}`
+                      : product.image,
+                    category: product.category ?? "",
+                    addToCart: false
+                  }}
+                  index={index}
+                />
               </motion.div>
             ))}
           </div>

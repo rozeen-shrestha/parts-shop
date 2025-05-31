@@ -10,7 +10,7 @@ export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const { scrollY } = useScroll();
-  
+
   const height = useTransform(scrollY, [0, 100], [80, 60]);
   const backgroundColor = useTransform(
     scrollY,
@@ -23,6 +23,7 @@ export function Navigation() {
     { name: "Products", href: "/products" },
     { name: "About", href: "/about" },
     { name: "Contact", href: "/contact" },
+    { name: "Cart", href: "/cart" },
   ];
 
   return (
@@ -41,7 +42,7 @@ export function Navigation() {
           {navItems.map((item) => (
             <motion.li
               key={item.name}
-              whileHover={{ 
+              whileHover={{
                 scale: 1.05,
                 backgroundColor: "rgba(255, 255, 255, 1)",
                 color: "black",

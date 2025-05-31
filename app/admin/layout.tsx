@@ -24,7 +24,7 @@ const sidebarItems = [
       { label: 'Edit Product', href: '/admin/products/edit' },
     ],
   },
-  { icon: Users, label: 'Customers', href: '/admin/customers' },
+  { icon: Users, label: 'Orders', href: '/admin/orders' },
   { icon: Users, label: 'Contacts', href: '/admin/contacts' },
 ];
 

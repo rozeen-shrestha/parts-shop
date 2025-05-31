@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BarChart,
@@ -12,46 +12,117 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-const salesData = [
-  { name: 'Jan', sales: 4000 },
-  { name: 'Feb', sales: 3000 },
-  { name: 'Mar', sales: 2000 },
-  { name: 'Apr', sales: 2780 },
-  { name: 'May', sales: 1890 },
-  { name: 'Jun', sales: 2390 },
-];
-
-const stats = [
-  { label: 'Total Sales', value: '$23,456' },
-  { label: 'Products', value: '124' },
-  { label: 'Customers', value: '1,893' },
-  { label: 'Avg. Order Value', value: '$189' },
-];
-
 interface Contact {
   name: string;
   email: string;
   phone: string;
   message: string;
+  createdAt?: string;
+}
+
+interface Order {
+  _id: string;
+  status: string;
+  createdAt: string;
+  total?: number;
+  // ...other fields...
+}
+
+interface Product {
+  _id: string;
+  name: string;
+  price: number;
+  // ...other fields...
 }
 
 export default function AdminDashboard() {
-  const [contacts, setContacts] = useState<Contact[]>([
-    {
-      name: 'John Doe',
-      email: 'john@example.com',
-      phone: '123-456-7890',
-      message: 'Looking for bulk orders.',
-    },
-    {
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      phone: '987-654-3210',
-      message: 'Interested in a partnership.',
-    },
-  ]);
-
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      try {
+        const [contactsRes, ordersRes, productsRes] = await Promise.all([
+          fetch('/api/contacts'),
+          fetch('/api/order'),
+          fetch('/api/product'),
+        ]);
+        const [contactsData, ordersData, productsData] = await Promise.all([
+          contactsRes.ok ? contactsRes.json() : [],
+          ordersRes.ok ? ordersRes.json() : [],
+          productsRes.ok ? productsRes.json() : [],
+        ]);
+        setContacts(Array.isArray(contactsData) ? contactsData : []);
+        setOrders(Array.isArray(ordersData) ? ordersData : []);
+        setProducts(Array.isArray(productsData) ? productsData : []);
+      } catch (e) {
+        setContacts([]);
+        setOrders([]);
+        setProducts([]);
+      }
+      setLoading(false);
+    }
+    fetchData();
+  }, []);
+
+  // Sales = confirmed orders
+  const confirmedOrders = orders.filter((o) => o.status === 'confirmed');
+  const totalSales = confirmedOrders.length;
+  const totalSalesAmount = confirmedOrders.reduce(
+    (sum, o) => sum + (typeof o.total === 'number' ? o.total : 0),
+    0
+  );
+  const avgOrderValue = totalSales > 0 ? totalSalesAmount / totalSales : 0;
+
+  const stats = [
+    { label: 'Total Sales', value: totalSales },
+    { label: 'Products', value: products.length },
+    { label: 'Contacts', value: contacts.length },
+  ];
+
+  // Sales data for chart: group confirmed orders by month
+  const salesData = (() => {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    const now = new Date();
+    const last6Months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      last6Months.push({
+        name: months[d.getMonth()],
+        year: d.getFullYear(),
+        key: `${d.getFullYear()}-${d.getMonth()}`,
+      });
+    }
+    const salesByMonth: Record<string, number> = {};
+    confirmedOrders.forEach((order) => {
+      const d = new Date(order.createdAt);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      salesByMonth[key] = (salesByMonth[key] || 0) + 1;
+    });
+    return last6Months.map((m) => ({
+      name: m.name,
+      sales: salesByMonth[m.key] || 0,
+    }));
+  })();
+
+  if (loading) return <div className="p-8 text-white">Loading...</div>;
 
   return (
     <div className="min-h-screen p-8 bg-black text-white">
@@ -69,7 +140,8 @@ export default function AdminDashboard() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6"
+        className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 w-full"
+        style={{ marginLeft: 0, marginRight: 0 }}
       >
         {stats.map((stat, index) => (
           <motion.div
@@ -77,7 +149,7 @@ export default function AdminDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="bg-gray-900 p-6 rounded-lg"
+            className="bg-gray-900 p-6 rounded-lg w-full"
           >
             <p className="text-gray-400 text-sm">{stat.label}</p>
             <p className="text-2xl font-bold mt-2">{stat.value}</p>
@@ -121,7 +193,7 @@ export default function AdminDashboard() {
           <p className="text-gray-400">No contact submissions yet.</p>
         ) : (
           <motion.div className="space-y-6">
-            {contacts.map((contact, index) => (
+            {contacts.slice(0, 5).map((contact, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
